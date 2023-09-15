@@ -1,0 +1,33 @@
+#!/usr/bin/zsh
+
+if [[ $# -eq 2 ]]; then
+    input_file=$1
+    output_file=$2
+else
+    echo "[ERROR] Incorrect number of arguments supplied (supplied $#, expected 2)."
+    exit 1
+fi
+
+DOCUMENTER_SHARE_DIR="/usr/share/documenter"
+HEADER_FILE="$DOCUMENTER_SHARE_DIR/static/html/header.html"
+FOOTER_FILE="$DOCUMENTER_SHARE_DIR/static/html/footer.html"
+CSS_PLACEHOLDER="%(STYLE_SHEET_PATH)s"
+pandoc_output=$(mktemp --suffix ".html")
+parsed_html_output=$(mktemp --suffix ".html")
+
+convert_md_to_html() {
+    pandoc "$input_file" --from commonmark --to html -o $pandoc_output
+}
+
+create_parsed_html_output() {
+    # Combine pandoc output, header, and footer
+    cat "$HEADER_FILE" | sed -e "s+$CSS_PLACEHOLDER+$DOCUMENTER_SHARE_DIR/static/css/style.css+" |
+        cat <$pandoc_output |
+        cat <$FOOTER_FILE >$parsed_html_output
+}
+
+render_pdf() {
+    chromium --headless --disable-gpu --print-to-pdf="$output_file" $parsed_html_output --no-pdf-header-footer
+}
+
+convert_md_to_html && create_parsed_html_output && render_pdf
