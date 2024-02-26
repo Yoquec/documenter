@@ -6,7 +6,7 @@ import (
 
 const (
 	pandocCommand      = "pandoc"
-	markdownSourceType = "markdown_phpextra"
+	markdownSourceType = "commonmark_x"
 )
 
 func MarkdownToHtml(filename string) ([]byte, error) {
