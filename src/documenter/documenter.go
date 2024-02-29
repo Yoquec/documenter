@@ -39,6 +39,13 @@ var plugins = []DocumenterPlugin{
 		),
 		WindowLoadCode: template.JS("hljs.highlightAll();"),
 	},
+	// mermaid.js plugin
+	{
+		PluginHead: template.HTML(
+			`<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>`,
+		),
+		WindowLoadCode: template.JS("mermaid.initialize();"),
+	},
 }
 
 type DocumenterDoc struct {
