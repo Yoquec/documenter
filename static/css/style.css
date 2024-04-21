@@ -26,6 +26,10 @@ blockquote {
   border-left: 3px solid #ccc;
 }
 
+blockquote p {
+    color: #595959;
+}
+
 table {
   border-collapse: collapse;
   max-width: 520px;
