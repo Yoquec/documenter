@@ -1,7 +1,6 @@
 package document
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"html/template"
@@ -45,10 +44,9 @@ func (d *Document) Render() ([]byte, error) {
 		return *new([]byte), fmt.Errorf("Could not load template '%s': %w", d.Template.Path, err)
 	}
 
-	var buffer bytes.Buffer
-	w := bufio.NewWriter(&buffer)
+	buffer := bytes.Buffer{}
 
-	err = t.ExecuteTemplate(w, d.Template.Name, d)
+	err = t.ExecuteTemplate(&buffer, d.Template.Name, d)
 	if err != nil {
 		return *new([]byte), fmt.Errorf(
 			"Could not hydrate template '%s' with document %v: %w",
