@@ -12,7 +12,7 @@ import (
 type Document struct {
 	Title          string
 	Plugins        []plugins.Plugin
-	Body           string
+	Body           template.HTML
 	Template       TemplateInfo
 	StyleSheetPath string
 }
@@ -26,14 +26,14 @@ func New(
 	title string,
 	plugins []plugins.Plugin,
 	body string,
-	template TemplateInfo,
+	templateInfo TemplateInfo,
 	stylesheetPath string,
 ) *Document {
 	return &Document{
 		title,
 		plugins,
-		body,
-		template,
+		template.HTML(body),
+		templateInfo,
 		stylesheetPath,
 	}
 }
@@ -41,14 +41,14 @@ func New(
 func (d *Document) Render() ([]byte, error) {
 	t, err := template.ParseFiles(d.Template.Path)
 	if err != nil {
-		return *new([]byte), fmt.Errorf("Could not load template '%s': %w", d.Template.Path, err)
+		return nil, fmt.Errorf("Could not load template '%s': %w", d.Template.Path, err)
 	}
 
 	buffer := bytes.Buffer{}
 
 	err = t.ExecuteTemplate(&buffer, d.Template.Name, d)
 	if err != nil {
-		return *new([]byte), fmt.Errorf(
+		return nil, fmt.Errorf(
 			"Could not hydrate template '%s' with document %v: %w",
 			d.Template.Path,
 			d, err,
