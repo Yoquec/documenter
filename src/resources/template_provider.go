@@ -106,8 +106,8 @@ func getResourceDirectories(osString uint) ([]string, error) {
 	switch osString {
 	case UNIX:
 		return []string{
-			"/usr/share/documenter",
-			path.Join(homedir, ".local/share/documenter"),
+			"/usr/share/go-documenter",
+			path.Join(homedir, ".local/share/go-documenter"),
 		}, nil
 	case WINDOWS:
 		// TODO: implement for windows
