@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"github.com/yoquec/documenter/src/documenter"
-	"github.com/yoquec/documenter/src/pandoc"
 	"github.com/yoquec/documenter/src/pdf"
+	"github.com/yoquec/documenter/src/plugins"
+	"github.com/yoquec/documenter/src/resources"
+	engine "gitlab.com/golang-commonmark/markdown"
 )
 
 var (
@@ -55,25 +57,27 @@ func init() {
 
 func main() {
 	filename := flag.Args()[0]
-
-	content, err := pandoc.MarkdownToHtml(filename)
-	if err != nil {
-		log.Println("Could not covert the markdown file to html.")
-		log.Fatal(err)
-	}
-
 	name := strings.TrimSuffix(filename, ".md")
 
-	output, err := documenter.Generate(name, content)
+	engine := engine.New(
+		engine.Tables(true),  // Render GFM tables
+		engine.Linkify(true), // Generate links for urls automatically
+		engine.HTML(true),    // Ignore html inside the markdown
+	)
+
+    provider := resources.NewTemplateProvider(resources.GetCurrentOs())
+	renderer := documenter.New(engine, plugins.DefaultPlugins, provider)
+
+    output, err := renderer.RenderDoc(name, filename)
 	if err != nil {
-		log.Fatal(err)
+        log.Fatal(err)
 	}
 
 	if mode == "pdf" {
 		output, err = pdf.GenerateFromHtml(output)
-        if err != nil {
-            log.Fatal(err)
-        }
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if outputPath == "" {

@@ -1,107 +1,57 @@
 package documenter
 
 import (
-	"html/template"
-	"log"
+	"fmt"
 	"os"
-	"path"
-	"strings"
+
+	"github.com/yoquec/documenter/src/document"
+	"github.com/yoquec/documenter/src/plugins"
 )
 
-const shareFolder = "/usr/share/go-documenter/"
-
-var plugins = []DocumenterPlugin{
-	// twemoji plugin
-	{
-		PluginHead: template.HTML(
-			`<script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>`,
-		),
-		WindowLoadCode: template.JS("twemoji.parse(document.body);"),
-	},
-	// KaTeX plugin
-	{
-		PluginHead: template.HTML(
-			strings.Join([]string{
-				`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">`,
-				`<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>`,
-				`<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>`,
-			}, "\n"),
-		),
-		WindowLoadCode: template.JS("renderMathInElement(document.body);"),
-	},
-	// highlight.js plugin
-	{
-		PluginHead: template.HTML(
-			strings.Join([]string{
-				`<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">`,
-				`<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>`,
-			}, "\n"),
-		),
-		WindowLoadCode: template.JS("hljs.highlightAll();"),
-	},
-	// mermaid.js plugin
-	{
-		PluginHead: template.HTML(
-			`<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>`,
-		),
-		WindowLoadCode: template.JS("mermaid.initialize();"),
-	},
+type Engine interface {
+	RenderToString(contents []byte) string
 }
 
-type DocumenterDoc struct {
-	Head    DocumenterHead
-	Content template.HTML
+type ResourceProvider interface {
+	GetTemplateByName(name string) (*document.TemplateInfo, error)
+	GetStyleSheetPath() (string, error)
 }
 
-type DocumenterHead struct {
-	Title      string
-	StyleSheet template.URL
-	Plugins    []DocumenterPlugin
+type Documenter struct {
+	engine    Engine
+	plugins   []plugins.Plugin
+	resources ResourceProvider
 }
 
-type DocumenterPlugin struct {
-	// HTML code for the plugin
-	PluginHead template.HTML
-	// Code to execute when the window is loaded for this plugin
-	WindowLoadCode template.JS
+func New(engine Engine, plugins []plugins.Plugin, provider ResourceProvider) *Documenter {
+	return &Documenter{
+		engine,
+		plugins,
+		provider,
+	}
 }
 
-// Generates the html file with the content of the markdown file
-func Generate(title string, content []byte) ([]byte, error) {
-	t, err := template.ParseFiles(
-		path.Join(shareFolder, "templates", "index.html"),
-	)
+func (d *Documenter) RenderDoc(title, path string) ([]byte, error) {
+	contents, err := os.ReadFile(path)
 	if err != nil {
-		log.Println("Could not parse the template file.")
-		return nil, err
+		return *new([]byte), fmt.Errorf("Could not read file '%s': %w", path, err)
 	}
-
-	tempFile, err := os.CreateTemp("/tmp", "*.html")
+	template, err := d.resources.GetTemplateByName("index")
 	if err != nil {
-		log.Println("Could not create an html temporary file.")
-		return nil, err
+		return *new([]byte), err
 	}
+	stylesheetPath, err := d.resources.GetStyleSheetPath()
+    if err != nil {
+        return *new([]byte), err
+    }
 
-	err = t.ExecuteTemplate(tempFile, "index", DocumenterDoc{
-		Head: DocumenterHead{
-			Title: title,
-			StyleSheet: template.URL(
-				"file://" + path.Join(shareFolder, "css", "style.css"),
-			),
-			Plugins: plugins,
-		},
-		Content: template.HTML(content),
-	})
-	if err != nil {
-		log.Println("Could not execute the template.")
-		return nil, err
-	}
+	html_body := d.engine.RenderToString(contents)
+	doc := document.New(title, d.plugins, html_body, *template, stylesheetPath)
 
-	output, err := os.ReadFile(tempFile.Name())
-	if err != nil {
-		log.Println("Could not read output of the template execution.")
-		return nil, err
-	}
+    render, err := doc.Render()
+    if err != nil {
+        return *new([]byte), fmt.Errorf("Could not render document: %w", err)
+    }
 
-	return output, nil
+    return render, nil
 }
