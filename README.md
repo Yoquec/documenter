@@ -3,7 +3,7 @@
 A Go program that compiles your markdown notes into html and pdf with the chromium pdf engine.
 
 <center>
-    <img src="https://yoquec.com/data/images/documenter.png" alt="Screenshot of documenter in use">
+    <img src="https://yoquec.com/data/images/documenter_1_1.png" alt="Screenshot of documenter in use">
 </center>
 
 Screenshot setup:
