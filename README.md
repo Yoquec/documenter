@@ -1,6 +1,6 @@
 # `go-documenter` 📚
 
-A Go program that uses `pandoc` to compile your markdown notes into html and pdf with the chromium pdf engine.
+A Go program that compiles your markdown notes into html and pdf with the chromium pdf engine.
 
 <center>
     <img src="https://yoquec.com/data/images/documenter.png" alt="Screenshot of documenter in use">
