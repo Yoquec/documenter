@@ -10,8 +10,9 @@ import (
 	"github.com/yoquec/documenter/src/documenter"
 	"github.com/yoquec/documenter/src/pdf"
 	"github.com/yoquec/documenter/src/plugins"
+	"github.com/yoquec/documenter/src/processor"
 	"github.com/yoquec/documenter/src/resources"
-	engine "gitlab.com/golang-commonmark/markdown"
+	"gitlab.com/golang-commonmark/markdown"
 )
 
 var (
@@ -59,18 +60,19 @@ func main() {
 	filename := flag.Args()[0]
 	name := strings.TrimSuffix(filename, ".md")
 
-	engine := engine.New(
-		engine.Tables(true),  // Render GFM tables
-		engine.Linkify(true), // Generate links for urls automatically
-		engine.HTML(true),    // Ignore html inside the markdown
+	engine := markdown.New(
+		markdown.Tables(true),  // Render GFM tables
+		markdown.Linkify(true), // Generate links for urls automatically
+		markdown.HTML(true),    // Ignore html inside the markdown
+        markdown.Typographer(true),
 	)
+	processor := processor.FromEngine(engine)
+	provider := resources.NewTemplateProvider(resources.GetCurrentOs())
+	renderer := documenter.New(processor, plugins.DefaultPlugins, provider)
 
-    provider := resources.NewTemplateProvider(resources.GetCurrentOs())
-	renderer := documenter.New(engine, plugins.DefaultPlugins, provider)
-
-    output, err := renderer.RenderDoc(name, filename)
+	output, err := renderer.RenderDoc(name, filename)
 	if err != nil {
-        log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	if mode == "pdf" {

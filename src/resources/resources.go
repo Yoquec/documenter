@@ -47,12 +47,10 @@ func GetCurrentOs() uint {
 func (tp *TemplateProvider) GetTemplateByName(templateName string) (*document.TemplateInfo, error) {
 	resourceDirs, err := getResourceDirectories(tp.os)
 	if err != nil {
-		return new(
-				document.TemplateInfo,
-			), fmt.Errorf(
-				"Could not retrieve template directories: %w",
-				err,
-			)
+		return nil, fmt.Errorf(
+			"Could not retrieve template directories: %w",
+			err,
+		)
 	}
 
 	for i := 0; i < len(resourceDirs); i++ {
@@ -65,14 +63,12 @@ func (tp *TemplateProvider) GetTemplateByName(templateName string) (*document.Te
 		}
 	}
 
-	return new(
-			document.TemplateInfo,
-		), fmt.Errorf(
-			"Could not find template named '%s'. Tried directories %v under the 'templates' subdir: %w",
-			templateName,
-			resourceDirs,
-			ErrTemplateNotFound,
-		)
+	return nil, fmt.Errorf(
+		"Could not find template named '%s'. Tried directories %v under the 'templates' subdir: %w",
+		templateName,
+		resourceDirs,
+		ErrTemplateNotFound,
+	)
 }
 
 func (tp *TemplateProvider) GetStyleSheetPath() (string, error) {
@@ -100,7 +96,7 @@ func (tp *TemplateProvider) GetStyleSheetPath() (string, error) {
 func getResourceDirectories(osString uint) ([]string, error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
-		return *new([]string), fmt.Errorf("Could not retrieve the current user's directory")
+		return nil, fmt.Errorf("Could not retrieve the current user's directory")
 	}
 
 	switch osString {
@@ -111,8 +107,8 @@ func getResourceDirectories(osString uint) ([]string, error) {
 		}, nil
 	case WINDOWS:
 		// TODO: implement for windows
-		return *new([]string), errors.New("Not implemented")
+		return nil, errors.New("Not implemented")
 	default:
-		return *new([]string), ErrUnknownOs
+		return nil, ErrUnknownOs
 	}
 }

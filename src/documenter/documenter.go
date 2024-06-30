@@ -8,8 +8,9 @@ import (
 	"github.com/yoquec/documenter/src/plugins"
 )
 
-type Engine interface {
-	RenderToString(contents []byte) string
+// Interface for a markdown processor
+type Processor interface {
+	Render(contents []byte) ([]byte, error)
 }
 
 type ResourceProvider interface {
@@ -18,12 +19,12 @@ type ResourceProvider interface {
 }
 
 type Documenter struct {
-	engine    Engine
+	processor Processor
 	plugins   []plugins.Plugin
 	resources ResourceProvider
 }
 
-func New(engine Engine, plugins []plugins.Plugin, provider ResourceProvider) *Documenter {
+func New(engine Processor, plugins []plugins.Plugin, provider ResourceProvider) *Documenter {
 	return &Documenter{
 		engine,
 		plugins,
@@ -34,24 +35,26 @@ func New(engine Engine, plugins []plugins.Plugin, provider ResourceProvider) *Do
 func (d *Documenter) RenderDoc(title, path string) ([]byte, error) {
 	contents, err := os.ReadFile(path)
 	if err != nil {
-		return *new([]byte), fmt.Errorf("Could not read file '%s': %w", path, err)
+		return nil, fmt.Errorf("Could not read file '%s': %w", path, err)
 	}
 	template, err := d.resources.GetTemplateByName("index")
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	stylesheetPath, err := d.resources.GetStyleSheetPath()
+	if err != nil {
+		return nil, err
+	}
+	html_body, err := d.processor.Render(contents)
     if err != nil {
-        return *new([]byte), err
+        return nil, fmt.Errorf("Could not render markdown file '%s': %w", path, err)
     }
 
-	html_body := d.engine.RenderToString(contents)
-	doc := document.New(title, d.plugins, html_body, *template, stylesheetPath)
+	doc := document.New(title, d.plugins, string(html_body), *template, stylesheetPath)
+	render, err := doc.Render()
+	if err != nil {
+		return nil, fmt.Errorf("Could not render document: %w", err)
+	}
 
-    render, err := doc.Render()
-    if err != nil {
-        return *new([]byte), fmt.Errorf("Could not render document: %w", err)
-    }
-
-    return render, nil
+	return render, nil
 }
