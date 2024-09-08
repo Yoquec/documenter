@@ -1,4 +1,4 @@
-package main
+package content
 
 import (
 	"slices"
@@ -14,7 +14,7 @@ func TestReadLinesIter(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		file := newDocumenterFileFromString(test.data)
+		file := FromString(test.data)
 		result := slices.Collect(file.ReadLines())
 
 		if len(result) != len(test.expected) {

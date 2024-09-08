@@ -1,23 +1,29 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/yoquec/documenter/documenter"
+	"github.com/yoquec/documenter/documenter/content"
+	"github.com/yoquec/documenter/documenter/preprocessors"
 )
 
 var (
 	outputFormat, outputPath string
-	allowedFormats           = [...]string{"pdf", "html"}
+	allowedFormats           = []string{"pdf", "html"}
 )
 
 const (
 	programName = "documenter"
 )
 
-// Function that sets the help message
+// Sets the help message
 func setUsageMessage() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %v [OPTIONS] FILE\n", programName)
@@ -31,6 +37,24 @@ func failWithHelpMessage(errorMessage string) {
 	slog.Error(errorMessage + "\n\n")
 	flag.Usage()
 	os.Exit(1)
+}
+
+func getFilename() string {
+	filename := flag.Args()[0]
+	if !strings.HasSuffix(filename, ".md") {
+		panic("Input filename does not appear to be a markdown file")
+	}
+	return filename
+}
+
+func parseArguments() {
+	flag.Parse()
+
+	if flag.NArg() == 0 {
+		failWithHelpMessage("Input file was not specified")
+	}
+
+	validateArguments()
 }
 
 func init() {
@@ -49,38 +73,46 @@ func init() {
 	setUsageMessage()
 }
 
-func getFilename() string {
-	filename := flag.Args()[0]
-	if !strings.HasSuffix(filename, ".md") {
-		panic("Input filename does not appear to be a markdown file")
-	}
-	return filename
-}
-
 func main() {
-	// NOTE: flag.Parse() cannot be inside the init function, otherwise
-	// running tests on package `main` will fail
-	// See https://stackoverflow.com/questions/60235896/flag-provided-but-not-defined-test-v
-	flag.Parse()
-
-	if flag.NArg() == 0 {
-		failWithHelpMessage("Input file was not specified")
-	}
-
+	parseArguments()
 	filename := getFilename()
 
-	file, err := newDocumenterFileFromPath(filename)
+	markdownFile, err := content.FromPath(filename)
 	if err != nil {
-		panic(fmt.Sprintf("Could not read filepath %q\n", filename))
+		panic(err)
 	}
 
-	preprocessorPipeline := newPipeline(
-		newFrontMatterPreprocessor(),
+	pipeline := documenter.NewPipeline(
+		preprocessors.NewYamlFrontmatterProcessor(),
 	)
-    preprocessorPipeline.Execute(file)
 
-	// fakeDocumenterFile := newDocumenterFileFromString("hola\nque\ntal")
-	// for line := range fakeDocumenterFile.ReadLines() {
-	// 	fmt.Println("line: ", string(line))
-	// }
+	markdownFile.Apply(pipeline)
+
+	htmlFile, err := markdownFile.ToHtml()
+	if err != nil {
+		panic(err)
+	}
+
+	var output *bytes.Buffer
+	if outputFormat == "html" {
+		output, err = htmlFile.Render()
+	} else {
+		panic("PDF conversion is not yet implemented")
+		// output, err = htmlFile.RenderPdf()
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	var file io.Writer
+	if outputPath != "" {
+		file, err = os.Create(outputPath)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		file = os.Stdout
+	}
+
+	output.WriteTo(file)
 }

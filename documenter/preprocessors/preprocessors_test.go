@@ -1,8 +1,10 @@
-package main
+package preprocessors
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/yoquec/documenter/documenter/content"
 )
 
 func TestIsYamlFrontMatterDelimeter(t *testing.T) {
@@ -32,7 +34,7 @@ func TestIsYamlFrontMatterDelimeter(t *testing.T) {
 }
 
 func TestFrontmatterProcessorSetsTitleInMetadata(t *testing.T) {
-	processor := newFrontMatterPreprocessor()
+	processor := NewYamlFrontmatterProcessor()
 	tests := []struct {
 		contents      string
 		expectedTitle string
@@ -45,33 +47,33 @@ func TestFrontmatterProcessorSetsTitleInMetadata(t *testing.T) {
 			`---`,
 		}, "\n"), "foo"},
 
-		// empty alias section, should leave empty title
+		// Empty alias section, should leave empty title
 		{strings.Join([]string{
 			`---`,
 			`id: bar`,
 			`---`,
 		}, "\n"), ""},
 
-		// No frontmatter should not modify empty title
+		// No front matter should not modify empty title
 		{"Foobarbaz", ""},
 	}
 
 	for _, test := range tests {
-		file := newDocumenterFileFromString(test.contents)
+		file := content.FromString(test.contents)
 		processor.Apply(file)
 
-		if file.metadata.title != test.expectedTitle {
+		if file.Metadata.Title != test.expectedTitle {
 			t.Errorf(
 				"Failed to set title correctly in metadata. Expected %q and got %q",
 				test.expectedTitle,
-				file.metadata.title,
+				file.Metadata.Title,
 			)
 		}
 	}
 }
 
 func TestFrontmatterProcessorTrimsFrontmatterFromContents(t *testing.T) {
-	processor := newFrontMatterPreprocessor()
+	processor := NewYamlFrontmatterProcessor()
 
 	tests := []struct {
 		contents string
@@ -92,9 +94,9 @@ func TestFrontmatterProcessorTrimsFrontmatterFromContents(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		file := newDocumenterFileFromString(test.contents)
+		file := content.FromString(test.contents)
 		processor.Apply(file)
-		actual := string(file.contents)
+		actual := file.Content.Buffer.String()
 
 		if actual != test.expected {
 			t.Errorf(

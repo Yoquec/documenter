@@ -1,0 +1,28 @@
+{{ define "index" }}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{{ .Title }}</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            {{ .Style }}
+        </style>
+
+        {{ range .Plugins }}
+            {{ .PluginHead }}
+        {{ end }}
+
+        <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            {{ range .Plugins }}
+                {{ .WindowLoadCode }}
+            {{ end }}
+        });
+        </script>
+    </head>
+    <body>
+        {{ .Body }}
+    </body>
+</html>
+{{ end }}
