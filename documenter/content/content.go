@@ -49,7 +49,7 @@ type markdownTransform interface {
 func FromPath(path string) (*MarkdownContent, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
-        return nil, fmt.Errorf("Could not read file from path %q: %x", path, err)
+        return nil, fmt.Errorf("Could not read file from path %q: %w", path, err)
 	}
 	metadata := newEmptyDocumenterMetadata()
 	metadata.Title = strings.TrimSuffix(path, ".md")
@@ -105,7 +105,7 @@ func (md *MarkdownContent) ToHtml() (*HtmlContent, error) {
 	buffer := bytes.NewBuffer(*new([]byte))
 
 	if err := engine.Render(buffer, md.Content.Buffer.Bytes()); err != nil {
-		return nil, fmt.Errorf("Could not render HTML from Markdown source: %x", err)
+		return nil, fmt.Errorf("Could not render HTML from Markdown source: %w", err)
 	}
 
 	return &HtmlContent{
@@ -128,7 +128,7 @@ func (h *HtmlContent) RenderWithPlugins(pluginList []plugins.Plugin) (*bytes.Buf
 	stylesheetContents, err := embededAssets.Open(embededAssets.stylesheetInfo.path)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"Could not open stylesheet %q: %x",
+			"Could not open stylesheet %q: %w",
 			embededAssets.stylesheetInfo.path,
 			err,
 		)
@@ -137,7 +137,7 @@ func (h *HtmlContent) RenderWithPlugins(pluginList []plugins.Plugin) (*bytes.Buf
 	t, err := template.ParseFS(embededAssets.FS, embededAssets.templateInfo.path)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"Could not open template %q: %x",
+			"Could not open template %q: %w",
 			embededAssets.templateInfo.path,
 			err,
 		)

@@ -50,7 +50,7 @@ func (ea *embeddedAssets) Open(path string) ([]byte, error) {
 	file, _ := ea.FS.Open(path)
 	contents := make([]byte, 0)
 	if _, err := file.Read(contents); err != nil {
-		return nil, fmt.Errorf("Could not read embedded file %q: %x", path, err)
+		return nil, fmt.Errorf("Could not read embedded file %q: %w", path, err)
 	}
 	return contents, nil
 }
